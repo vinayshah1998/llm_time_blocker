@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM Time Blocker Settings</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>LLM Time Blocker</h1>
+
+    <!-- API Key Section -->
+    <section class="section">
+      <h2>API Key</h2>
+      <div class="input-group">
+        <input type="password" id="api-key" placeholder="Enter your Anthropic API key">
+        <button id="save-api-key">Save</button>
+      </div>
+      <p class="status" id="api-key-status"></p>
+    </section>
+
+    <!-- Active Approvals Section -->
+    <section class="section">
+      <h2>Active Approvals</h2>
+      <div id="active-approvals">
+        <p class="empty-state">No active approvals</p>
+      </div>
+    </section>
+
+    <!-- Blocked Sites Section -->
+    <section class="section">
+      <h2>Blocked Sites</h2>
+      <ul id="blocked-sites-list">
+        <!-- Sites will be added here -->
+      </ul>
+
+      <div class="add-site-section" id="add-site-section">
+        <div class="input-group">
+          <input type="text" id="new-site" placeholder="e.g., facebook.com">
+          <button id="add-site-btn">Add</button>
+        </div>
+      </div>
+
+      <!-- Phrase Protection -->
+      <div class="protection-section" id="protection-section">
+        <p class="protection-hint">To modify blocked sites, type the following phrase:</p>
+        <p class="protection-phrase">"I understand this defeats the purpose of this extension"</p>
+        <input type="text" id="unlock-phrase" placeholder="Type the phrase above...">
+        <button id="unlock-btn">Unlock</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

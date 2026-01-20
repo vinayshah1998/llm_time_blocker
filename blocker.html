@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Site Blocked - LLM Time Blocker</title>
+  <link rel="stylesheet" href="blocker.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Site Blocked</h1>
+      <p class="blocked-url" id="blocked-url"></p>
+    </div>
+
+    <div class="chat-container">
+      <div class="chat-messages" id="chat-messages">
+        <!-- Messages will be added here -->
+      </div>
+
+      <div class="chat-input-container">
+        <textarea
+          id="user-input"
+          placeholder="Type your justification for accessing this site... (paste disabled)"
+          rows="3"
+        ></textarea>
+        <button id="send-btn" disabled>Send</button>
+      </div>
+
+      <p class="hint">Explain why you need to access this site. Be specific - provide exact URLs if you're claiming educational content.</p>
+    </div>
+
+    <div class="error-message" id="error-message"></div>
+  </div>
+
+  <script src="blocker.js"></script>
+</body>
+</html>
