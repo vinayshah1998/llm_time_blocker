@@ -28,6 +28,45 @@
       </div>
     </section>
 
+    <!-- Blocking Schedule Section -->
+    <section class="section">
+      <div class="schedule-header">
+        <h2>Blocking Schedule</h2>
+        <label class="toggle-switch">
+          <input type="checkbox" id="schedule-toggle">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="schedule-box" id="schedule-box">
+        <div class="schedule-status" id="schedule-status">
+          <span class="status-indicator" id="status-indicator"></span>
+          <span id="status-text">Loading...</span>
+        </div>
+        <button class="edit-schedule-btn" id="edit-schedule-btn">Edit Schedule...</button>
+      </div>
+    </section>
+
+    <!-- Schedule Modal -->
+    <div class="modal-overlay" id="schedule-modal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3>Edit Schedule</h3>
+          <button class="modal-close" id="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-hint">Sites are blocked during these time ranges:</p>
+          <div id="time-ranges-container">
+            <!-- Time ranges will be added here -->
+          </div>
+          <button class="add-range-btn" id="add-range-btn">+ Add Time Range</button>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-btn cancel-btn" id="modal-cancel">Cancel</button>
+          <button class="modal-btn save-btn" id="modal-save">Save</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Blocked Sites Section -->
     <section class="section">
       <h2>Blocked Sites</h2>

@@ -23,20 +23,43 @@ const addSiteBtn = document.getElementById('add-site-btn');
 const unlockPhraseInput = document.getElementById('unlock-phrase');
 const unlockBtn = document.getElementById('unlock-btn');
 
+// Schedule DOM elements
+const scheduleToggle = document.getElementById('schedule-toggle');
+const statusIndicator = document.getElementById('status-indicator');
+const statusText = document.getElementById('status-text');
+const editScheduleBtn = document.getElementById('edit-schedule-btn');
+const scheduleModal = document.getElementById('schedule-modal');
+const modalClose = document.getElementById('modal-close');
+const modalCancel = document.getElementById('modal-cancel');
+const modalSave = document.getElementById('modal-save');
+const addRangeBtn = document.getElementById('add-range-btn');
+const timeRangesContainer = document.getElementById('time-ranges-container');
+
 // State
 let isUnlocked = false;
 let refreshInterval = null;
+let scheduleRefreshInterval = null;
+let editingSchedule = null; // Temporary schedule being edited in modal
 
 // Initialize
 async function init() {
   await loadApiKey();
   await loadActiveApprovals();
+  await loadScheduleStatus();
   await loadBlockedSites();
 
   // Event listeners
   saveApiKeyBtn.addEventListener('click', saveApiKey);
   unlockBtn.addEventListener('click', handleUnlock);
   addSiteBtn.addEventListener('click', handleAddSite);
+
+  // Schedule event listeners
+  scheduleToggle.addEventListener('change', handleScheduleToggle);
+  editScheduleBtn.addEventListener('click', openScheduleEditor);
+  modalClose.addEventListener('click', closeScheduleEditor);
+  modalCancel.addEventListener('click', closeScheduleEditor);
+  modalSave.addEventListener('click', saveSchedule);
+  addRangeBtn.addEventListener('click', () => addTimeRangeRow());
 
   // Allow Enter key for inputs
   apiKeyInput.addEventListener('keydown', (e) => {
@@ -53,6 +76,9 @@ async function init() {
 
   // Auto-refresh approvals every 30 seconds
   refreshInterval = setInterval(loadActiveApprovals, 30000);
+
+  // Auto-refresh schedule status every 10 seconds
+  scheduleRefreshInterval = setInterval(loadScheduleStatus, 10000);
 }
 
 // Load API key from storage
@@ -228,6 +254,195 @@ function showStatus(element, message, type) {
       element.textContent = '';
     }
   }, 3000);
+}
+
+// ========== Schedule Management Functions ==========
+
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+// Load schedule status from background
+async function loadScheduleStatus() {
+  const response = await chrome.runtime.sendMessage({ type: 'GET_SCHEDULE_STATUS' });
+  const { isBlocking, schedules } = response;
+
+  // Update toggle state
+  scheduleToggle.checked = schedules?.enabled ?? false;
+
+  // Update status indicator
+  if (!schedules || !schedules.enabled) {
+    // Schedule disabled - always blocking
+    statusIndicator.className = 'status-indicator active';
+    statusText.textContent = 'Always blocking (schedule disabled)';
+  } else if (schedules.timeRanges && schedules.timeRanges.length > 0) {
+    if (isBlocking) {
+      statusIndicator.className = 'status-indicator active';
+      statusText.textContent = 'Blocking ACTIVE';
+    } else {
+      statusIndicator.className = 'status-indicator inactive';
+      statusText.textContent = 'Blocking inactive (outside schedule)';
+    }
+  } else {
+    // No time ranges configured
+    statusIndicator.className = 'status-indicator active';
+    statusText.textContent = 'Always blocking (no schedule set)';
+  }
+}
+
+// Handle schedule toggle
+async function handleScheduleToggle() {
+  const data = await chrome.storage.local.get(['schedules']);
+  const schedules = data.schedules || {
+    enabled: false,
+    timeRanges: []
+  };
+
+  schedules.enabled = scheduleToggle.checked;
+  await chrome.storage.local.set({ schedules });
+  await loadScheduleStatus();
+}
+
+// Open schedule editor modal
+async function openScheduleEditor() {
+  const data = await chrome.storage.local.get(['schedules']);
+  editingSchedule = data.schedules || {
+    enabled: true,
+    timeRanges: []
+  };
+
+  // Render time ranges
+  renderTimeRanges();
+
+  // Show modal
+  scheduleModal.classList.add('visible');
+}
+
+// Close schedule editor modal
+function closeScheduleEditor() {
+  scheduleModal.classList.remove('visible');
+  editingSchedule = null;
+}
+
+// Render time ranges in the editor
+function renderTimeRanges() {
+  timeRangesContainer.innerHTML = '';
+
+  if (editingSchedule.timeRanges.length === 0) {
+    timeRangesContainer.innerHTML = '<p class="time-ranges-empty">No time ranges configured. Click "+ Add Time Range" to add one.</p>';
+    return;
+  }
+
+  editingSchedule.timeRanges.forEach((range, index) => {
+    const row = createTimeRangeRow(range, index);
+    timeRangesContainer.appendChild(row);
+  });
+}
+
+// Create a time range row element
+function createTimeRangeRow(range, index) {
+  const row = document.createElement('div');
+  row.className = 'time-range-row';
+  row.dataset.index = index;
+
+  // Day picker
+  const dayPicker = document.createElement('div');
+  dayPicker.className = 'day-picker';
+
+  DAY_LABELS.forEach((label, dayIndex) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'day-btn' + (range.days.includes(dayIndex) ? ' selected' : '');
+    btn.textContent = label;
+    btn.dataset.day = dayIndex;
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('selected');
+      updateRangeDays(index);
+    });
+    dayPicker.appendChild(btn);
+  });
+
+  // Time inputs row
+  const timeInputs = document.createElement('div');
+  timeInputs.className = 'time-inputs';
+
+  const startInput = document.createElement('input');
+  startInput.type = 'time';
+  startInput.value = range.startTime;
+  startInput.addEventListener('change', () => {
+    editingSchedule.timeRanges[index].startTime = startInput.value;
+  });
+
+  const toSpan = document.createElement('span');
+  toSpan.textContent = 'to';
+
+  const endInput = document.createElement('input');
+  endInput.type = 'time';
+  endInput.value = range.endTime;
+  endInput.addEventListener('change', () => {
+    editingSchedule.timeRanges[index].endTime = endInput.value;
+  });
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.type = 'button';
+  deleteBtn.className = 'delete-range-btn';
+  deleteBtn.innerHTML = '&times;';
+  deleteBtn.title = 'Delete time range';
+  deleteBtn.addEventListener('click', () => {
+    editingSchedule.timeRanges.splice(index, 1);
+    renderTimeRanges();
+  });
+
+  timeInputs.appendChild(startInput);
+  timeInputs.appendChild(toSpan);
+  timeInputs.appendChild(endInput);
+  timeInputs.appendChild(deleteBtn);
+
+  row.appendChild(dayPicker);
+  row.appendChild(timeInputs);
+
+  return row;
+}
+
+// Update days for a specific range based on selected buttons
+function updateRangeDays(index) {
+  const row = timeRangesContainer.querySelector(`[data-index="${index}"]`);
+  const selectedDays = [];
+  row.querySelectorAll('.day-btn.selected').forEach(btn => {
+    selectedDays.push(parseInt(btn.dataset.day, 10));
+  });
+  editingSchedule.timeRanges[index].days = selectedDays;
+}
+
+// Add a new time range row
+function addTimeRangeRow(range = null) {
+  if (!editingSchedule) return;
+
+  const newRange = range || {
+    id: `range-${Date.now()}`,
+    days: [1, 2, 3, 4, 5], // Monday to Friday by default
+    startTime: '09:00',
+    endTime: '17:00'
+  };
+
+  editingSchedule.timeRanges.push(newRange);
+  renderTimeRanges();
+}
+
+// Save schedule to storage
+async function saveSchedule() {
+  if (!editingSchedule) return;
+
+  // Validate: remove ranges with no days selected
+  editingSchedule.timeRanges = editingSchedule.timeRanges.filter(range => range.days.length > 0);
+
+  // If toggle was off but we now have time ranges, enable it
+  if (editingSchedule.timeRanges.length > 0 && !editingSchedule.enabled) {
+    editingSchedule.enabled = true;
+  }
+
+  await chrome.storage.local.set({ schedules: editingSchedule });
+
+  closeScheduleEditor();
+  await loadScheduleStatus();
 }
 
 // Initialize when DOM is ready

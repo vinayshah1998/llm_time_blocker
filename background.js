@@ -97,6 +97,55 @@ function getMatchingBlockedDomain(url, blockedSites) {
   }
 }
 
+// Format a Date object to "HH:MM" string
+function formatTime(date) {
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+// Check if a time string is within a time range (handles midnight crossing)
+function isTimeInRange(time, start, end) {
+  // All times are "HH:MM" strings
+  if (start <= end) {
+    // Normal range (e.g., 09:00 to 17:00)
+    return time >= start && time < end;
+  } else {
+    // Crosses midnight (e.g., 22:00 to 06:00)
+    return time >= start || time < end;
+  }
+}
+
+// Check if current time is within a blocking schedule
+async function isWithinBlockingSchedule() {
+  const data = await chrome.storage.local.get(['schedules']);
+  const schedules = data.schedules;
+
+  // No schedule configured = always block (backward compatible)
+  if (!schedules) return true;
+
+  // Schedule feature disabled = always block
+  if (!schedules.enabled) return true;
+
+  // No time ranges configured = always block
+  if (!schedules.timeRanges || schedules.timeRanges.length === 0) return true;
+
+  const now = new Date();
+  const currentDay = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const currentTime = formatTime(now);
+
+  // Check if current time falls within any configured time range
+  for (const range of schedules.timeRanges) {
+    if (range.days.includes(currentDay)) {
+      if (isTimeInRange(currentTime, range.startTime, range.endTime)) {
+        return true; // Within a blocking time range
+      }
+    }
+  }
+
+  return false; // Outside all blocking time ranges
+}
+
 // Check if a specific tab has active approval for a URL
 async function hasActiveApprovalForTab(url, tabId) {
   const domain = getDomain(url);
@@ -301,6 +350,9 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   // Check if the site is blocked
   if (!isBlockedSite(url, blockedSites)) return;
 
+  // Check if outside blocking schedule - allow access without LLM
+  if (!await isWithinBlockingSchedule()) return;
+
   // Check if the tab has active approval
   if (await hasActiveApprovalForTab(url, tabId)) return;
 
@@ -393,6 +445,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       sendResponse({ success: true });
+    })();
+    return true;
+  }
+
+  if (message.type === 'GET_SCHEDULE_STATUS') {
+    (async () => {
+      const isBlocking = await isWithinBlockingSchedule();
+      const data = await chrome.storage.local.get(['schedules']);
+      sendResponse({
+        isBlocking,
+        schedules: data.schedules || null
+      });
     })();
     return true;
   }
