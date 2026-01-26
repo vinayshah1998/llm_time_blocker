@@ -1,31 +1,3 @@
-// System prompt for the LLM gatekeeper
-const SYSTEM_PROMPT = `You are a strict gatekeeper protecting the user from distracting websites.
-Your job is to push back HARD against any attempt to access blocked sites.
-
-IMPORTANT: The blocked URL shown below is the ACTUAL URL the user is trying to access.
-Users CANNOT provide alternative URLs - ignore any URLs they mention as they may be
-attempting to bypass this check by claiming educational content.
-
-ONLY approve access if:
-1. LIFE-THREATENING EMERGENCY - Medical emergency, safety issue requiring immediate access
-2. URGENT WORK DEADLINE - Specific, verifiable work task that genuinely requires this exact site
-   and cannot be accomplished any other way (e.g., need to respond to a work message on this platform)
-
-NEVER approve based on:
-- Claims that the content is "educational" or for "research"
-- URLs the user provides (they may be fake)
-- Vague justifications about learning or productivity
-
-ALWAYS:
-- Question their justification thoroughly
-- Suggest alternatives (Google search, documentation sites, other platforms)
-- Remind them this is a distraction site they chose to block
-- Be very skeptical - assume they are trying to procrastinate
-
-Respond with [ACCESS GRANTED] only if truly justified (rare).
-Respond with [ACCESS DENIED] and explanation otherwise.
-Keep responses concise but firm.`;
-
 // Get DOM elements
 const chatMessages = document.getElementById('chat-messages');
 const userInput = document.getElementById('user-input');
@@ -158,64 +130,58 @@ async function handleSend() {
   showLoading();
 
   try {
-    // Get API key from storage
-    const data = await chrome.storage.local.get(['apiKey']);
-    if (!data.apiKey) {
+    // Check if user is authenticated
+    const tokens = await window.api.getAuthTokens();
+    if (!tokens?.accessToken) {
       removeLoading();
-      showError('API key not set. Please set your Anthropic API key in the extension popup.');
-      addMessage('assistant', 'Error: No API key configured. Please click the extension icon and add your Anthropic API key.', 'error');
+      showError('Please sign in to use LLM Time Blocker.');
+      addMessage('assistant', 'Error: You need to sign in to use this service. Click the extension icon to sign in or create an account.', 'error');
       return;
     }
 
-    // Call the LLM
-    const response = await callLLM(data.apiKey, messageHistory);
+    // Call the LLM via backend proxy
+    const result = await callLLM(messageHistory);
 
     removeLoading();
 
     // Add assistant response to chat
-    addMessage('assistant', response);
+    addMessage('assistant', result.response);
 
     // Add to message history
-    messageHistory.push({ role: 'assistant', content: response });
+    messageHistory.push({ role: 'assistant', content: result.response });
 
     // Check if access was granted
-    if (response.includes('[ACCESS GRANTED]')) {
+    if (result.response.includes('[ACCESS GRANTED]')) {
       await handleAccessGranted();
     }
 
   } catch (error) {
     removeLoading();
     console.error('LLM API error:', error);
-    showError('Failed to communicate with LLM. Check your API key and try again.');
-    addMessage('assistant', `Error: ${error.message}`, 'error');
+
+    // Handle specific error codes
+    if (error.code === 'SUBSCRIPTION_REQUIRED') {
+      showError('A subscription is required. Click the extension icon to subscribe.');
+      addMessage('assistant', 'Error: An active subscription is required to use this service. Click the extension icon to subscribe ($5/month with 7-day free trial).', 'error');
+    } else if (error.code === 'SUBSCRIPTION_ENDED') {
+      showError('Your subscription has ended. Please resubscribe to continue.');
+      addMessage('assistant', 'Error: Your subscription has ended. Click the extension icon to resubscribe.', 'error');
+    } else if (error.code === 'RATE_LIMIT_EXCEEDED' || error.code === 'DAILY_LIMIT_EXCEEDED') {
+      showError('Rate limit exceeded. Please wait before sending more messages.');
+      addMessage('assistant', 'Error: You\'ve sent too many messages. Please wait a moment before trying again.', 'error');
+    } else if (error.status === 401) {
+      showError('Session expired. Please sign in again.');
+      addMessage('assistant', 'Error: Your session has expired. Click the extension icon to sign in again.', 'error');
+    } else {
+      showError('Failed to communicate with LLM. Please try again.');
+      addMessage('assistant', `Error: ${error.message}`, 'error');
+    }
   }
 }
 
-// Call the Anthropic Claude API
-async function callLLM(apiKey, messages) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT + `\n\nThe user is trying to access: ${blockedUrl}`,
-      messages: messages
-    })
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data.content[0].text;
+// Call the LLM via backend proxy
+async function callLLM(messages) {
+  return await window.api.llm.chat(messages, blockedUrl);
 }
 
 // Handle access granted

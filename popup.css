@@ -604,3 +604,163 @@ h1 {
   font-size: 12px;
   padding: 20px;
 }
+
+/* Account Section */
+.account-box {
+  background: #1a1a3e;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.account-box.hidden {
+  display: none;
+}
+
+.account-hint {
+  color: #8a8aaa;
+  font-size: 13px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.primary-btn {
+  width: 100%;
+  padding: 12px;
+  background: #4a6a9a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.primary-btn:hover {
+  background: #5a7aaa;
+}
+
+.account-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #2a2a4a;
+}
+
+.account-email {
+  font-size: 13px;
+  color: #e4e4e4;
+}
+
+.text-btn {
+  background: transparent;
+  border: none;
+  color: #8a8aaa;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+
+.text-btn:hover {
+  color: #e68a8a;
+}
+
+.subscription-box {
+  background: #2a2a4a;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.subscription-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.subscription-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.subscription-badge.free {
+  background: #3a3a5a;
+  color: #8a8aaa;
+}
+
+.subscription-badge.trial {
+  background: rgba(138, 230, 230, 0.2);
+  color: #8ae6e6;
+}
+
+.subscription-badge.active {
+  background: rgba(138, 230, 138, 0.2);
+  color: #8ae68a;
+}
+
+.subscription-badge.past-due {
+  background: rgba(230, 200, 138, 0.2);
+  color: #e6c88a;
+}
+
+.subscription-badge.canceled {
+  background: rgba(230, 138, 138, 0.2);
+  color: #e68a8a;
+}
+
+.subscription-text {
+  font-size: 12px;
+  color: #8a8aaa;
+}
+
+.subscribe-btn {
+  width: 100%;
+  padding: 10px;
+  background: #4a9a6a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.subscribe-btn:hover {
+  background: #5aaa7a;
+}
+
+.subscribe-btn.hidden {
+  display: none;
+}
+
+.manage-btn {
+  width: 100%;
+  padding: 10px;
+  background: #2a2a4a;
+  color: #8a8aaa;
+  border: 1px solid #3a3a5a;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.manage-btn:hover {
+  background: #3a3a5a;
+  color: #e4e4e4;
+}
+
+.manage-btn.hidden {
+  display: none;
+}
+
+.hidden {
+  display: none;
+}

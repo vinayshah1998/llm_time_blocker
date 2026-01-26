@@ -10,10 +10,18 @@ const DEFAULT_BLOCKED_SITES = [
   'x.com'
 ];
 
-// DOM elements
-const apiKeyInput = document.getElementById('api-key');
-const saveApiKeyBtn = document.getElementById('save-api-key');
-const apiKeyStatus = document.getElementById('api-key-status');
+// Auth DOM elements
+const loggedOutState = document.getElementById('logged-out-state');
+const loggedInState = document.getElementById('logged-in-state');
+const signInBtn = document.getElementById('sign-in-btn');
+const signOutBtn = document.getElementById('sign-out-btn');
+const accountEmail = document.getElementById('account-email');
+const subscriptionBadge = document.getElementById('subscription-badge');
+const subscriptionText = document.getElementById('subscription-text');
+const subscribeBtn = document.getElementById('subscribe-btn');
+const manageBtn = document.getElementById('manage-btn');
+
+// Other DOM elements
 const activeApprovalsEl = document.getElementById('active-approvals');
 const blockedSitesList = document.getElementById('blocked-sites-list');
 const addSiteSection = document.getElementById('add-site-section');
@@ -43,13 +51,18 @@ let editingSchedule = null; // Temporary schedule being edited in modal
 
 // Initialize
 async function init() {
-  await loadApiKey();
+  await loadAuthState();
   await loadActiveApprovals();
   await loadScheduleStatus();
   await loadBlockedSites();
 
-  // Event listeners
-  saveApiKeyBtn.addEventListener('click', saveApiKey);
+  // Auth event listeners
+  signInBtn.addEventListener('click', handleSignIn);
+  signOutBtn.addEventListener('click', handleSignOut);
+  subscribeBtn.addEventListener('click', handleSubscribe);
+  manageBtn.addEventListener('click', handleManageBilling);
+
+  // Other event listeners
   unlockBtn.addEventListener('click', handleUnlock);
   addSiteBtn.addEventListener('click', handleAddSite);
 
@@ -62,10 +75,6 @@ async function init() {
   addRangeBtn.addEventListener('click', () => addTimeRangeRow());
 
   // Allow Enter key for inputs
-  apiKeyInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') saveApiKey();
-  });
-
   unlockPhraseInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleUnlock();
   });
@@ -81,34 +90,131 @@ async function init() {
   scheduleRefreshInterval = setInterval(loadScheduleStatus, 10000);
 }
 
-// Load API key from storage
-async function loadApiKey() {
-  const data = await chrome.storage.local.get(['apiKey']);
-  if (data.apiKey) {
-    apiKeyInput.value = '••••••••••••••••••••';
-    apiKeyInput.dataset.hasKey = 'true';
-    showStatus(apiKeyStatus, 'API key is set', 'success');
+// Load auth state from storage
+async function loadAuthState() {
+  try {
+    const user = await window.api.getUser();
+    const tokens = await window.api.getAuthTokens();
+
+    if (user && tokens?.accessToken) {
+      showLoggedInState(user);
+    } else {
+      showLoggedOutState();
+    }
+  } catch (e) {
+    console.error('Failed to load auth state:', e);
+    showLoggedOutState();
   }
 }
 
-// Save API key
-async function saveApiKey() {
-  const apiKey = apiKeyInput.value.trim();
+// Show logged out state
+function showLoggedOutState() {
+  loggedOutState.classList.remove('hidden');
+  loggedInState.classList.add('hidden');
+}
 
-  if (!apiKey || apiKey === '••••••••••••••••••••') {
-    showStatus(apiKeyStatus, 'Please enter a valid API key', 'error');
-    return;
+// Show logged in state
+function showLoggedInState(user) {
+  loggedOutState.classList.add('hidden');
+  loggedInState.classList.remove('hidden');
+
+  accountEmail.textContent = user.email;
+  updateSubscriptionUI(user.subscriptionStatus);
+}
+
+// Update subscription UI based on status
+function updateSubscriptionUI(status) {
+  // Reset classes
+  subscriptionBadge.className = 'subscription-badge';
+
+  switch (status) {
+    case 'TRIALING':
+      subscriptionBadge.classList.add('trial');
+      subscriptionBadge.textContent = 'Trial';
+      subscriptionText.textContent = '7-day free trial';
+      subscribeBtn.classList.add('hidden');
+      manageBtn.classList.remove('hidden');
+      break;
+    case 'ACTIVE':
+      subscriptionBadge.classList.add('active');
+      subscriptionBadge.textContent = 'Pro';
+      subscriptionText.textContent = 'Active subscription';
+      subscribeBtn.classList.add('hidden');
+      manageBtn.classList.remove('hidden');
+      break;
+    case 'PAST_DUE':
+      subscriptionBadge.classList.add('past-due');
+      subscriptionBadge.textContent = 'Past Due';
+      subscriptionText.textContent = 'Payment failed';
+      subscribeBtn.classList.add('hidden');
+      manageBtn.classList.remove('hidden');
+      break;
+    case 'CANCELED':
+      subscriptionBadge.classList.add('canceled');
+      subscriptionBadge.textContent = 'Canceled';
+      subscriptionText.textContent = 'Access until period ends';
+      subscribeBtn.classList.remove('hidden');
+      manageBtn.classList.remove('hidden');
+      break;
+    default:
+      subscriptionBadge.classList.add('free');
+      subscriptionBadge.textContent = 'Free';
+      subscriptionText.textContent = 'No active subscription';
+      subscribeBtn.classList.remove('hidden');
+      manageBtn.classList.add('hidden');
   }
+}
 
-  if (!apiKey.startsWith('sk-')) {
-    showStatus(apiKeyStatus, 'Invalid API key format', 'error');
-    return;
+// Handle sign in button
+function handleSignIn() {
+  chrome.tabs.create({ url: chrome.runtime.getURL('auth.html') });
+}
+
+// Handle sign out button
+async function handleSignOut() {
+  try {
+    await window.api.auth.logout();
+    showLoggedOutState();
+  } catch (e) {
+    console.error('Logout failed:', e);
+    // Clear tokens anyway
+    await window.api.clearAuthTokens();
+    showLoggedOutState();
   }
+}
 
-  await chrome.storage.local.set({ apiKey });
-  apiKeyInput.value = '••••••••••••••••••••';
-  apiKeyInput.dataset.hasKey = 'true';
-  showStatus(apiKeyStatus, 'API key saved!', 'success');
+// Handle subscribe button
+async function handleSubscribe() {
+  try {
+    const successUrl = chrome.runtime.getURL('popup.html') + '?subscription=success';
+    const cancelUrl = chrome.runtime.getURL('popup.html') + '?subscription=canceled';
+
+    const result = await window.api.billing.createCheckoutSession(successUrl, cancelUrl);
+    if (result.url) {
+      chrome.tabs.create({ url: result.url });
+    }
+  } catch (e) {
+    console.error('Failed to create checkout session:', e);
+    if (e.code === 'ALREADY_SUBSCRIBED') {
+      alert('You already have an active subscription!');
+    } else {
+      alert('Failed to start subscription. Please try again.');
+    }
+  }
+}
+
+// Handle manage billing button
+async function handleManageBilling() {
+  try {
+    const returnUrl = chrome.runtime.getURL('popup.html');
+    const result = await window.api.billing.createPortalSession(returnUrl);
+    if (result.url) {
+      chrome.tabs.create({ url: result.url });
+    }
+  } catch (e) {
+    console.error('Failed to create portal session:', e);
+    alert('Failed to open billing portal. Please try again.');
+  }
 }
 
 // Load active approvals

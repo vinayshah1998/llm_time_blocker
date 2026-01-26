@@ -10,14 +10,33 @@
   <div class="container">
     <h1>LLM Time Blocker</h1>
 
-    <!-- API Key Section -->
-    <section class="section">
-      <h2>API Key</h2>
-      <div class="input-group">
-        <input type="password" id="api-key" placeholder="Enter your Anthropic API key">
-        <button id="save-api-key">Save</button>
+    <!-- Account Section -->
+    <section class="section" id="account-section">
+      <h2>Account</h2>
+
+      <!-- Logged Out State -->
+      <div id="logged-out-state" class="account-box">
+        <p class="account-hint">Sign in to use LLM Time Blocker</p>
+        <button class="primary-btn" id="sign-in-btn">Sign In / Create Account</button>
       </div>
-      <p class="status" id="api-key-status"></p>
+
+      <!-- Logged In State -->
+      <div id="logged-in-state" class="account-box hidden">
+        <div class="account-info">
+          <span class="account-email" id="account-email">user@example.com</span>
+          <button class="text-btn" id="sign-out-btn">Sign Out</button>
+        </div>
+
+        <!-- Subscription Status -->
+        <div class="subscription-box" id="subscription-box">
+          <div class="subscription-status">
+            <span class="subscription-badge" id="subscription-badge">Free</span>
+            <span class="subscription-text" id="subscription-text">No active subscription</span>
+          </div>
+          <button class="subscribe-btn" id="subscribe-btn">Subscribe - $5/mo</button>
+          <button class="manage-btn hidden" id="manage-btn">Manage Billing</button>
+        </div>
+      </div>
     </section>
 
     <!-- Active Approvals Section -->
@@ -91,6 +110,7 @@
     </section>
   </div>
 
+  <script src="api.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
