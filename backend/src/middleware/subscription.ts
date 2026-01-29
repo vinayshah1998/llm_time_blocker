@@ -36,7 +36,7 @@ export async function subscriptionMiddleware(
     }
 
     // For CANCELED status, check if the subscription period has ended
-    if (user.subscriptionStatus === 'CANCELED' && user.subscription) {
+    if (user.subscriptionStatus === 'CANCELED' && user.subscription?.currentPeriodEnd) {
       if (new Date() > user.subscription.currentPeriodEnd) {
         // Update status to NONE since period has ended
         await prisma.user.update({
