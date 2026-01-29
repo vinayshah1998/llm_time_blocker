@@ -28,18 +28,28 @@ LLM Time Blocker is a Chrome extension (Manifest V3) that blocks distracting web
 ### Component Responsibilities
 
 - **background.js**: Service worker that handles navigation interception, approval storage/expiration, and message passing between components
-- **blocker.js**: Chat interface that calls Anthropic API directly (uses `anthropic-dangerous-direct-browser-access` header), parses LLM responses for access decisions
+- **blocker.js**: Chat interface that proxies LLM calls through backend API (`api.js`), parses LLM responses for access decisions
 - **popup.js**: Settings management with phrase-protected site list modification (unlock phrase: "I understand this defeats the purpose of this extension")
+- **api.js**: Centralized API client with automatic token refresh, handles auth/billing/LLM endpoints
+- **auth.html/auth.js**: Login and signup forms
 
 ### Storage Keys (chrome.storage.local)
-- `apiKey`: Anthropic API key
+- `authTokens`: JWT access and refresh tokens for backend authentication
+- `user`: User object with email and subscription status
 - `blockedSites`: Array of blocked domains
 - `approvals`: Object mapping domains to approval timestamps
+- `schedules`: Time window configuration for scheduled blocking
 
 ### Message Types (chrome.runtime)
 - `GRANT_APPROVAL`: Store approval timestamp for a URL
 - `CHECK_APPROVAL`: Check if URL has active approval
 - `GET_APPROVAL_STATUS`: Get all active approvals with remaining time
+
+### Backend API (backend/)
+- **Tech stack**: Node.js, Express, TypeScript, PostgreSQL, Prisma
+- **Auth**: JWT-based with 15min access / 30day refresh tokens
+- **Billing**: Stripe subscription at $5/month with 7-day free trial
+- **Endpoints**: /api/auth/*, /api/billing/*, /api/llm/chat, /webhooks/stripe
 
 ## Key Constants
 - Approval duration: 30 minutes (`APPROVAL_DURATION_MS`)
