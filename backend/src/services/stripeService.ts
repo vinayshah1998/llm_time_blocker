@@ -163,20 +163,25 @@ async function syncSubscription(userId: string, subscription: Stripe.Subscriptio
   });
 
   // Upsert subscription record
+  const trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000) : null;
+  const currentPeriodEnd = subscription.current_period_end
+    ? new Date(subscription.current_period_end * 1000)
+    : null;
+
   await prisma.subscription.upsert({
     where: { userId },
     create: {
       userId,
       stripeSubscriptionId: subscription.id,
       status: subscription.status,
-      trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      trialEnd,
+      currentPeriodEnd,
     },
     update: {
       stripeSubscriptionId: subscription.id,
       status: subscription.status,
-      trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      trialEnd,
+      currentPeriodEnd,
     },
   });
 }
