@@ -1,14 +1,6 @@
-// The unlock phrase required to modify blocked sites
-const UNLOCK_PHRASE = 'I understand this defeats the purpose of this extension';
-
-// Default blocked sites
-const DEFAULT_BLOCKED_SITES = [
-  'youtube.com',
-  'instagram.com',
-  'reddit.com',
-  'twitter.com',
-  'x.com'
-];
+// Use constants from shared module
+const UNLOCK_PHRASE = LLM_BLOCKER_CONSTANTS.UNLOCK_PHRASE;
+const DEFAULT_BLOCKED_SITES = LLM_BLOCKER_CONSTANTS.DEFAULT_BLOCKED_SITES;
 
 // Auth DOM elements
 const loggedOutState = document.getElementById('logged-out-state');
@@ -187,7 +179,7 @@ function updateSubscriptionUI(status) {
 
 // Handle sign in button
 function handleSignIn() {
-  chrome.tabs.create({ url: chrome.runtime.getURL('auth.html') });
+  chrome.tabs.create({ url: chrome.runtime.getURL('src/pages/auth/auth.html') });
 }
 
 // Handle sign out button
@@ -227,7 +219,7 @@ async function handleSubscribe() {
 // Handle manage billing button
 async function handleManageBilling() {
   try {
-    const returnUrl = chrome.runtime.getURL('popup.html');
+    const returnUrl = chrome.runtime.getURL('src/pages/popup/popup.html');
     const result = await window.api.billing.createPortalSession(returnUrl);
     if (result.url) {
       chrome.tabs.create({ url: result.url });

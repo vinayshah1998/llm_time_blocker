@@ -1,14 +1,9 @@
-// Default blocked sites
-const DEFAULT_BLOCKED_SITES = [
-  'youtube.com',
-  'instagram.com',
-  'reddit.com',
-  'twitter.com',
-  'x.com'
-];
+// Import shared constants
+importScripts('../shared/constants.js');
 
-// Approval duration in milliseconds (30 minutes)
-const APPROVAL_DURATION_MS = 30 * 60 * 1000;
+// Use constants from shared module
+const DEFAULT_BLOCKED_SITES = LLM_BLOCKER_CONSTANTS.DEFAULT_BLOCKED_SITES;
+const APPROVAL_DURATION_MS = LLM_BLOCKER_CONSTANTS.APPROVAL_DURATION_MS;
 
 // Grace period for navigation checks (to avoid race conditions)
 const NAVIGATION_GRACE_PERIOD_MS = 5000;
@@ -243,7 +238,7 @@ async function handleApprovalExpiration(tabId) {
     // Redirect to blocker page after delay
     setTimeout(async () => {
       try {
-        const blockerUrl = chrome.runtime.getURL('blocker.html') + '?url=' + encodeURIComponent(originalUrl);
+        const blockerUrl = chrome.runtime.getURL('src/pages/blocker/blocker.html') + '?url=' + encodeURIComponent(originalUrl);
         await chrome.tabs.update(tabId, { url: blockerUrl });
       } catch {
         // Tab may have been closed
@@ -357,7 +352,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   if (await hasActiveApprovalForTab(url, tabId)) return;
 
   // Redirect to blocker page
-  const blockerUrl = chrome.runtime.getURL('blocker.html') + '?url=' + encodeURIComponent(url);
+  const blockerUrl = chrome.runtime.getURL('src/pages/blocker/blocker.html') + '?url=' + encodeURIComponent(url);
 
   chrome.tabs.update(tabId, { url: blockerUrl });
 });
@@ -437,7 +432,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         // Redirect the tab to blocker page
         try {
-          const blockerUrl = chrome.runtime.getURL('blocker.html') + '?url=' + encodeURIComponent(originalUrl);
+          const blockerUrl = chrome.runtime.getURL('src/pages/blocker/blocker.html') + '?url=' + encodeURIComponent(originalUrl);
           await chrome.tabs.update(tabId, { url: blockerUrl });
         } catch {
           // Tab may not exist

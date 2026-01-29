@@ -17,21 +17,40 @@ LLM Time Blocker is a Chrome extension (Manifest V3) that blocks distracting web
 
 ## Architecture
 
+### Directory Structure
+```
+llm_time_blocker/
+├── manifest.json
+├── src/
+│   ├── shared/
+│   │   ├── constants.js      # Shared constants (blocked sites, durations, phrases)
+│   │   └── api.js            # Centralized API client
+│   ├── background/
+│   │   └── background.js     # Service worker
+│   └── pages/
+│       ├── popup/            # Extension popup (settings)
+│       ├── blocker/          # Blocking page with LLM chat
+│       └── auth/             # Login/signup forms
+└── assets/
+    └── icons/                # Extension icons
+```
+
 ### Core Flow
 1. `background.js` intercepts navigation via `webNavigation.onBeforeNavigate`
 2. Checks if URL matches blocked sites and has no active approval
-3. Redirects to `blocker.html?url=<original_url>` if blocked
+3. Redirects to `src/pages/blocker/blocker.html?url=<original_url>` if blocked
 4. User must convince the LLM in `blocker.js` (paste disabled as anti-cheat)
 5. LLM responds with `[ACCESS GRANTED]` or `[ACCESS DENIED]`
 6. On approval, stores timestamp in `chrome.storage.local` and redirects
 
 ### Component Responsibilities
 
-- **background.js**: Service worker that handles navigation interception, approval storage/expiration, and message passing between components
-- **blocker.js**: Chat interface that proxies LLM calls through backend API (`api.js`), parses LLM responses for access decisions
-- **popup.js**: Settings management with phrase-protected site list modification (unlock phrase: "I understand this defeats the purpose of this extension")
-- **api.js**: Centralized API client with automatic token refresh, handles auth/billing/LLM endpoints
-- **auth.html/auth.js**: Login and signup forms
+- **src/shared/constants.js**: Shared constants (DEFAULT_BLOCKED_SITES, APPROVAL_DURATION_MS, UNLOCK_PHRASE)
+- **src/shared/api.js**: Centralized API client with automatic token refresh, handles auth/billing/LLM endpoints
+- **src/background/background.js**: Service worker that handles navigation interception, approval storage/expiration, and message passing between components
+- **src/pages/blocker/blocker.js**: Chat interface that proxies LLM calls through backend API, parses LLM responses for access decisions
+- **src/pages/popup/popup.js**: Settings management with phrase-protected site list modification
+- **src/pages/auth/**: Login and signup forms
 
 ### Storage Keys (chrome.storage.local)
 - `authTokens`: JWT access and refresh tokens for backend authentication
