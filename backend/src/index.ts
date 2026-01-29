@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.js';
 import billingRoutes from './routes/billing.js';
 import llmRoutes from './routes/llm.js';
 import webhookRoutes from './routes/webhooks.js';
+import checkoutRedirectRoutes from './routes/checkout-redirect.js';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -19,7 +20,8 @@ const corsOptions: cors.CorsOptions = {
       // Allow localhost in development
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // Allow browser requests to checkout redirect pages (no origin for direct navigation)
+      callback(null, true);
     }
   },
   credentials: true,
@@ -42,6 +44,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/llm', llmRoutes);
+app.use('/checkout', checkoutRedirectRoutes);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {

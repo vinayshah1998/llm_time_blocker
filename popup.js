@@ -186,8 +186,9 @@ async function handleSignOut() {
 // Handle subscribe button
 async function handleSubscribe() {
   try {
-    const successUrl = chrome.runtime.getURL('popup.html') + '?subscription=success';
-    const cancelUrl = chrome.runtime.getURL('popup.html') + '?subscription=canceled';
+    // Use backend URLs for Stripe redirects (chrome-extension:// URLs are not supported by Stripe)
+    const successUrl = 'https://backend-production-e828f.up.railway.app/checkout/success';
+    const cancelUrl = 'https://backend-production-e828f.up.railway.app/checkout/cancel';
 
     const result = await window.api.billing.createCheckoutSession(successUrl, cancelUrl);
     if (result.url) {
