@@ -764,3 +764,9 @@ h1 {
 .hidden {
   display: none;
 }
+
+/* Disable transitions during initial load to prevent flashing */
+.no-transitions .toggle-slider,
+.no-transitions .toggle-slider:before {
+  transition: none !important;
+}

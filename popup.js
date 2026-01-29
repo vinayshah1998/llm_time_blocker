@@ -51,10 +51,13 @@ let editingSchedule = null; // Temporary schedule being edited in modal
 
 // Initialize
 async function init() {
-  await loadAuthState();
-  await loadActiveApprovals();
-  await loadScheduleStatus();
-  await loadBlockedSites();
+  // Run all async operations in parallel since they're independent
+  await Promise.all([
+    loadAuthState(),
+    loadActiveApprovals(),
+    loadScheduleStatus(),
+    loadBlockedSites()
+  ]);
 
   // Auth event listeners
   signInBtn.addEventListener('click', handleSignIn);
@@ -88,6 +91,9 @@ async function init() {
 
   // Auto-refresh schedule status every 10 seconds
   scheduleRefreshInterval = setInterval(loadScheduleStatus, 10000);
+
+  // Enable transitions now that initial state is set
+  document.body.classList.remove('no-transitions');
 }
 
 // Load auth state from storage
@@ -97,7 +103,21 @@ async function loadAuthState() {
     const tokens = await window.api.getAuthTokens();
 
     if (user && tokens?.accessToken) {
+      // Show cached data immediately (no flash)
       showLoggedInState(user);
+
+      // Then fetch fresh data in the background
+      try {
+        const freshUser = await window.api.auth.getMe();
+        await window.api.setUser(freshUser);
+        // Only update UI if subscription status changed
+        if (freshUser.subscriptionStatus !== user.subscriptionStatus) {
+          updateSubscriptionUI(freshUser.subscriptionStatus);
+        }
+      } catch (e) {
+        // Silently fail - cached data is already shown
+        console.warn('Could not refresh user data:', e);
+      }
     } else {
       showLoggedOutState();
     }
@@ -369,15 +389,17 @@ const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 // Load schedule status from background
 async function loadScheduleStatus() {
+  // Immediately read from storage to set toggle (no flash)
+  const data = await chrome.storage.local.get(['schedules']);
+  const cachedSchedules = data.schedules;
+  scheduleToggle.checked = cachedSchedules?.enabled ?? false;
+
+  // Then get full status from background (for isBlocking calculation)
   const response = await chrome.runtime.sendMessage({ type: 'GET_SCHEDULE_STATUS' });
   const { isBlocking, schedules } = response;
 
-  // Update toggle state
-  scheduleToggle.checked = schedules?.enabled ?? false;
-
-  // Update status indicator
+  // Update status indicator text
   if (!schedules || !schedules.enabled) {
-    // Schedule disabled - always blocking
     statusIndicator.className = 'status-indicator active';
     statusText.textContent = 'Always blocking (schedule disabled)';
   } else if (schedules.timeRanges && schedules.timeRanges.length > 0) {
@@ -389,7 +411,6 @@ async function loadScheduleStatus() {
       statusText.textContent = 'Blocking inactive (outside schedule)';
     }
   } else {
-    // No time ranges configured
     statusIndicator.className = 'status-indicator active';
     statusText.textContent = 'Always blocking (no schedule set)';
   }
