@@ -10,6 +10,14 @@ import { prisma } from '../index.js';
 
 const router = Router();
 
+// Helper to check if error is "No such customer" (test mode customer used with production API)
+function isNoSuchCustomerError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    error.message.includes('No such customer')
+  );
+}
+
 // Create checkout session
 router.post(
   '/create-checkout-session',
@@ -52,14 +60,38 @@ router.post(
         return;
       }
 
-      const checkoutUrl = await createCheckoutSession(
-        customerId,
-        user.id,
-        successUrl,
-        cancelUrl
-      );
+      try {
+        const checkoutUrl = await createCheckoutSession(
+          customerId,
+          user.id,
+          successUrl,
+          cancelUrl
+        );
+        res.json({ url: checkoutUrl });
+      } catch (stripeError) {
+        // Handle test mode customer ID used with production API
+        if (isNoSuchCustomerError(stripeError)) {
+          console.log(`Invalid customer ${customerId} for user ${user.id}, creating new production customer`);
 
-      res.json({ url: checkoutUrl });
+          // Create new production customer
+          const newCustomerId = await createCustomer(user.email, user.id);
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { stripeCustomerId: newCustomerId },
+          });
+
+          // Retry checkout session with new customer
+          const checkoutUrl = await createCheckoutSession(
+            newCustomerId,
+            user.id,
+            successUrl,
+            cancelUrl
+          );
+          res.json({ url: checkoutUrl });
+        } else {
+          throw stripeError;
+        }
+      }
     } catch (error) {
       console.error('Create checkout session error:', error);
       res.status(500).json({ error: 'Failed to create checkout session' });
@@ -98,9 +130,28 @@ router.post(
         return;
       }
 
-      const portalUrl = await createPortalSession(user.stripeCustomerId, returnUrl);
+      try {
+        const portalUrl = await createPortalSession(user.stripeCustomerId, returnUrl);
+        res.json({ url: portalUrl });
+      } catch (stripeError) {
+        // Handle test mode customer ID used with production API
+        if (isNoSuchCustomerError(stripeError)) {
+          console.log(`Invalid customer ${user.stripeCustomerId} for user ${user.id}, creating new production customer`);
 
-      res.json({ url: portalUrl });
+          // Create new production customer
+          const newCustomerId = await createCustomer(user.email, user.id);
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { stripeCustomerId: newCustomerId },
+          });
+
+          // Retry portal session with new customer
+          const portalUrl = await createPortalSession(newCustomerId, returnUrl);
+          res.json({ url: portalUrl });
+        } else {
+          throw stripeError;
+        }
+      }
     } catch (error) {
       console.error('Create portal session error:', error);
       res.status(500).json({ error: 'Failed to create portal session' });
