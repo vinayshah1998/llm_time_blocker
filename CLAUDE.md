@@ -51,6 +51,17 @@ LLM Time Blocker is a Chrome extension (Manifest V3) that blocks distracting web
 - **Billing**: Stripe subscription at $5/month with 7-day free trial
 - **Endpoints**: /api/auth/*, /api/billing/*, /api/llm/chat, /webhooks/stripe
 
+## Deployment
+
+### Railway Configuration
+The backend is deployed on Railway with GitHub integration.
+
+**Important**: The repo root contains the Chrome extension, not the backend. For GitHub-triggered deploys to work:
+1. **Railway Console**: Set Root Directory to `backend` in service Settings → Source
+2. **Config file**: `backend/railway.toml` defines build/deploy configuration
+
+Without the Root Directory setting, GitHub pushes will fail because Railway tries to build from the repo root (which lacks `package.json`), while manual `railway up` from `backend/` succeeds.
+
 ## Key Constants
 - Approval duration: 30 minutes (`APPROVAL_DURATION_MS`)
 - Default blocked sites: youtube.com, instagram.com, reddit.com, twitter.com, x.com
