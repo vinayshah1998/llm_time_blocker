@@ -10,6 +10,9 @@ import checkoutRedirectRoutes from './routes/checkout-redirect.js';
 const app = express();
 const prisma = new PrismaClient();
 
+// Trust proxy for Railway (required for express-rate-limit and correct IP detection)
+app.set('trust proxy', 1);
+
 // CORS configuration for Chrome extension
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {

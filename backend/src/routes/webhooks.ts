@@ -32,35 +32,42 @@ router.post('/', async (req: Request, res: Response) => {
     return;
   }
 
+  console.log(`Webhook received: ${event.type}, id: ${event.id}`);
+
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         await handleCheckoutCompleted(session);
+        console.log(`Processed checkout.session.completed for customer: ${session.customer}`);
         break;
       }
 
       case 'customer.subscription.created': {
         const subscription = event.data.object as Stripe.Subscription;
         await handleSubscriptionCreated(subscription);
+        console.log(`Processed customer.subscription.created: ${subscription.id}, status: ${subscription.status}`);
         break;
       }
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
         await handleSubscriptionUpdated(subscription);
+        console.log(`Processed customer.subscription.updated: ${subscription.id}, status: ${subscription.status}`);
         break;
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
         await handleSubscriptionDeleted(subscription);
+        console.log(`Processed customer.subscription.deleted: ${subscription.id}`);
         break;
       }
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
         await handlePaymentFailed(invoice);
+        console.log(`Processed invoice.payment_failed: ${invoice.id}`);
         break;
       }
 
