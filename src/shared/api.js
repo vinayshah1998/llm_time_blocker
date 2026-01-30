@@ -171,6 +171,24 @@ const authApi = {
     return data;
   },
 
+  async loginWithGoogle(accessToken) {
+    const response = await fetch(`${API_BASE_URL}/api/auth/oauth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new ApiError(data.error || 'Google login failed', response.status, data.code);
+    }
+
+    await setAuthTokens(data.tokens);
+    await setUser(data.user);
+    return data;
+  },
+
   async logout() {
     try {
       const tokens = await getAuthTokens();

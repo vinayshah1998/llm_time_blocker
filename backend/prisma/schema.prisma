@@ -8,15 +8,30 @@ datasource db {
 }
 
 model User {
-  id                 String        @id @default(cuid())
-  email              String        @unique
-  passwordHash       String
-  stripeCustomerId   String?       @unique
-  subscriptionStatus String        @default("NONE") // NONE, TRIALING, ACTIVE, PAST_DUE, CANCELED
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  id                 String         @id @default(cuid())
+  email              String         @unique
+  passwordHash       String?        // Nullable for OAuth-only users
+  stripeCustomerId   String?        @unique
+  subscriptionStatus String         @default("NONE") // NONE, TRIALING, ACTIVE, PAST_DUE, CANCELED
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
   subscription       Subscription?
   refreshTokens      RefreshToken[]
+  oauthAccounts      OAuthAccount[]
+}
+
+model OAuthAccount {
+  id             String   @id @default(cuid())
+  userId         String
+  provider       String   // "google" | "apple"
+  providerUserId String   // OAuth provider's user ID
+  email          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
 }
 
 model Subscription {

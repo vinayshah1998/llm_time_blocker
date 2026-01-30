@@ -9,12 +9,17 @@
     "activeTab",
     "alarms",
     "scripting",
-    "tabs"
+    "tabs",
+    "identity"
   ],
   "host_permissions": [
     "<all_urls>",
     "https://api.llmtimeblocker.com/*"
   ],
+  "oauth2": {
+    "client_id": "874864342842-hq1nkblqoofjbvnokr6tfo6n47vhklph.apps.googleusercontent.com",
+    "scopes": ["openid", "email", "profile"]
+  },
   "background": {
     "service_worker": "src/background/background.js"
   },

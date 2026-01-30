@@ -137,6 +137,12 @@ router.post('/login', authRateLimit, async (req, res: Response) => {
       return;
     }
 
+    // Check if user has a password (OAuth-only users don't)
+    if (!user.passwordHash) {
+      res.status(401).json({ error: 'This account uses Google sign-in. Please sign in with Google.' });
+      return;
+    }
+
     // Verify password
     const validPassword = await bcrypt.compare(password, user.passwordHash);
     if (!validPassword) {

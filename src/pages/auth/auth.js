@@ -8,6 +8,7 @@ const loginFormEl = document.getElementById('login-form-el');
 const signupFormEl = document.getElementById('signup-form-el');
 const loginBtn = document.getElementById('login-btn');
 const signupBtn = document.getElementById('signup-btn');
+const googleSigninBtn = document.getElementById('google-signin');
 const authError = document.getElementById('auth-error');
 const errorMessage = document.getElementById('error-message');
 const authSuccess = document.getElementById('auth-success');
@@ -141,6 +142,36 @@ signupFormEl.addEventListener('submit', async (e) => {
     showError(error.message || 'Signup failed. Please try again.');
   } finally {
     setLoading(signupBtn, false);
+  }
+});
+
+// Handle Google sign-in
+googleSigninBtn.addEventListener('click', async () => {
+  hideError();
+  setLoading(googleSigninBtn, true);
+
+  try {
+    // Get Google access token via chrome.identity.getAuthToken
+    const { accessToken } = await window.oauth.initiateGoogleAuth();
+
+    // Send access token to backend for verification and JWT token exchange
+    await window.api.auth.loginWithGoogle(accessToken);
+
+    showSuccess('Login successful! Redirecting...');
+
+    // Close this tab
+    setTimeout(() => {
+      window.close();
+    }, 1000);
+  } catch (error) {
+    // Handle user cancellation gracefully
+    if (error.message?.includes('canceled') || error.message?.includes('cancelled') || error.message?.includes('The user did not approve')) {
+      hideError();
+    } else {
+      showError(error.message || 'Google sign-in failed. Please try again.');
+    }
+  } finally {
+    setLoading(googleSigninBtn, false);
   }
 });
 

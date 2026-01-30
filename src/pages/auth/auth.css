@@ -185,3 +185,63 @@ body {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* OAuth styles */
+.oauth-container {
+  margin-bottom: 16px;
+}
+
+.oauth-btn {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.google-btn {
+  background: #ffffff;
+  color: #444444;
+}
+
+.google-btn:hover {
+  background: #f5f5f5;
+  border-color: #4a6a9a;
+}
+
+.google-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
+.google-icon {
+  flex-shrink: 0;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #2a2a4a;
+}
+
+.divider span {
+  padding: 0 12px;
+  color: #6a6a8a;
+  font-size: 12px;
+  text-transform: uppercase;
+}

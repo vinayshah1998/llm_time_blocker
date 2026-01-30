@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth.js';
+import oauthRoutes from './routes/oauth.js';
+console.log('OAuth routes imported:', typeof oauthRoutes, oauthRoutes);
 import billingRoutes from './routes/billing.js';
 import llmRoutes from './routes/llm.js';
 import webhookRoutes from './routes/webhooks.js';
@@ -45,6 +47,12 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+try {
+  app.use('/api/auth/oauth', oauthRoutes);
+  console.log('OAuth routes mounted successfully');
+} catch (error) {
+  console.error('Failed to mount OAuth routes:', error);
+}
 app.use('/api/billing', billingRoutes);
 app.use('/api/llm', llmRoutes);
 app.use('/checkout', checkoutRedirectRoutes);
