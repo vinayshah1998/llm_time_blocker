@@ -172,9 +172,15 @@ async function handleSend() {
     } else if (error.status === 401) {
       showError('Session expired. Please sign in again.');
       addMessage('assistant', 'Error: Your session has expired. Click the extension icon to sign in again.', 'error');
+    } else if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      showError('Unable to reach the server. Please check your internet connection and try again.');
+      addMessage('assistant', 'Error: Unable to reach the server. Please check your internet connection and try again.', 'error');
+    } else if (error.name === 'AbortError' || error.code === 'TIMEOUT') {
+      showError('Request timed out. The server may be experiencing issues. Please try again.');
+      addMessage('assistant', 'Error: The request timed out. The server may be experiencing issues. Please try again.', 'error');
     } else {
-      showError('Failed to communicate with LLM. Please try again.');
-      addMessage('assistant', `Error: ${error.message}`, 'error');
+      showError('Something went wrong. Please try again in a moment.');
+      addMessage('assistant', 'Error: Something went wrong. Please try again in a moment.', 'error');
     }
   }
 }

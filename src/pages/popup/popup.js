@@ -250,13 +250,29 @@ async function loadActiveApprovals() {
       ? (info.tabTitle.length > 30 ? info.tabTitle.substring(0, 27) + '...' : info.tabTitle)
       : info.domain;
 
-    itemEl.innerHTML = `
-      <div class="approval-info">
-        <span class="approval-domain" title="${info.tabTitle || info.domain}">${displayTitle}</span>
-        <span class="approval-time">${info.remainingMins} min left</span>
-      </div>
-      <button class="revoke-btn" data-tab-id="${tabId}" title="Revoke access">&times;</button>
-    `;
+    const approvalInfo = document.createElement('div');
+    approvalInfo.className = 'approval-info';
+
+    const domainSpan = document.createElement('span');
+    domainSpan.className = 'approval-domain';
+    domainSpan.setAttribute('title', info.tabTitle || info.domain);
+    domainSpan.textContent = displayTitle;
+
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'approval-time';
+    timeSpan.textContent = info.remainingMins + ' min left';
+
+    approvalInfo.appendChild(domainSpan);
+    approvalInfo.appendChild(timeSpan);
+
+    const revokeBtn = document.createElement('button');
+    revokeBtn.className = 'revoke-btn';
+    revokeBtn.dataset.tabId = tabId;
+    revokeBtn.setAttribute('title', 'Revoke access');
+    revokeBtn.textContent = '\u00D7';
+
+    itemEl.appendChild(approvalInfo);
+    itemEl.appendChild(revokeBtn);
     activeApprovalsEl.appendChild(itemEl);
   }
 

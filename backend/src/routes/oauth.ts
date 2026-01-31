@@ -6,9 +6,6 @@ import { prisma } from '../index.js';
 import { JwtPayload } from '../middleware/auth.js';
 import { authRateLimit } from '../middleware/rateLimit.js';
 import { createCustomer } from '../services/stripeService.js';
-
-console.log('oauth.ts module loading...');
-
 const router = Router();
 
 const ACCESS_TOKEN_EXPIRY = '15m';
@@ -183,5 +180,4 @@ router.post('/google', authRateLimit, async (req, res: Response) => {
   }
 });
 
-console.log('oauth.ts routes registered, exporting router');
 export default router;
