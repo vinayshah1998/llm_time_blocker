@@ -71,6 +71,8 @@ router.post(
       } catch (stripeError) {
         // Handle test mode customer ID used with production API
         if (isNoSuchCustomerError(stripeError)) {
+          console.log(`Invalid customer ${customerId} for user ${user.id}, creating new production customer`);
+
           // Create new production customer
           const newCustomerId = await createCustomer(user.email, user.id);
           await prisma.user.update({
@@ -134,6 +136,8 @@ router.post(
       } catch (stripeError) {
         // Handle test mode customer ID used with production API
         if (isNoSuchCustomerError(stripeError)) {
+          console.log(`Invalid customer ${user.stripeCustomerId} for user ${user.id}, creating new production customer`);
+
           // Create new production customer
           const newCustomerId = await createCustomer(user.email, user.id);
           await prisma.user.update({
