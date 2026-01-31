@@ -1,9 +1,8 @@
 // API client for LLM Time Blocker backend
 // Handles authentication, token refresh, and API calls
 
-const API_BASE_URL = 'https://backend-production-e828f.up.railway.app';
-// For development, uncomment the line below:
-// const API_BASE_URL = 'http://localhost:3000';
+// API_BASE_URL is loaded from config.js (must be included before this script)
+const API_BASE_URL = LLM_BLOCKER_CONFIG.API_BASE_URL;
 
 // Error codes for handling specific situations
 const ErrorCodes = {
