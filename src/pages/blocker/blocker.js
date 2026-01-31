@@ -9,14 +9,33 @@ const errorMessageEl = document.getElementById('error-message');
 const urlParams = new URLSearchParams(window.location.search);
 const blockedUrl = urlParams.get('url');
 
+// Constants from shared constants file
+const { DEFAULT_BLOCKED_SITES } = window.LLM_BLOCKER_CONSTANTS;
+
 // Message history for LLM context
 let messageHistory = [];
 
 // Initialize
-function init() {
+async function init() {
   if (!blockedUrl) {
     showError('No URL specified. This page should not be accessed directly.');
     return;
+  }
+
+  // Validate that the URL is actually in the blocked sites list (Issue #10)
+  try {
+    const data = await chrome.storage.local.get(['blockedSites']);
+    const blockedSites = data.blockedSites || DEFAULT_BLOCKED_SITES;
+    const urlHostname = new URL(blockedUrl).hostname.replace(/^www\./, '');
+    const isActuallyBlocked = blockedSites.some(site => urlHostname === site || urlHostname.endsWith('.' + site));
+    if (!isActuallyBlocked) {
+      document.body.textContent = 'Invalid blocked URL.';
+      throw new Error('URL is not in blocked sites list');
+    }
+  } catch (e) {
+    if (e.message === 'URL is not in blocked sites list') throw e;
+    document.body.textContent = 'Invalid blocked URL.';
+    throw new Error('Invalid URL provided');
   }
 
   blockedUrlEl.textContent = blockedUrl;
@@ -126,6 +145,12 @@ async function handleSend() {
   // Add to message history
   messageHistory.push({ role: 'user', content: message });
 
+  // Prevent abuse via excessively long message histories (Issue #12)
+  if (messageHistory.length > 20) {
+    showError('Maximum message limit reached. Please reload the page.');
+    return;
+  }
+
   // Show loading indicator
   showLoading();
 
@@ -151,7 +176,12 @@ async function handleSend() {
     messageHistory.push({ role: 'assistant', content: result.response });
 
     // Check if access was granted
-    if (result.response.includes('[ACCESS GRANTED]')) {
+    // NOTE (Issue #4): The access decision relies on string matching of [ACCESS GRANTED] in the
+    // LLM response. Ideally, the backend should return a structured decision field separate from
+    // the response text to prevent prompt injection. This is a known limitation that should be
+    // addressed in a future backend update. As a basic safeguard, we verify the result object
+    // has the expected API response format.
+    if (result && typeof result.response === 'string' && result.response.includes('[ACCESS GRANTED]')) {
       await handleAccessGranted();
     }
 
@@ -200,8 +230,16 @@ async function handleAccessGranted() {
     url: blockedUrl
   });
 
-  // Redirect after a brief delay
-  setTimeout(() => {
+  // Redirect after a brief delay, with re-validation to prevent open redirect (Issue #6)
+  setTimeout(async () => {
+    const storageData = await chrome.storage.local.get(['blockedSites']);
+    const sites = storageData.blockedSites || DEFAULT_BLOCKED_SITES;
+    const hostname = new URL(blockedUrl).hostname.replace(/^www\./, '');
+    const isBlocked = sites.some(s => hostname === s || hostname.endsWith('.' + s));
+    if (!isBlocked) {
+      console.error('Redirect blocked: URL not in blocked sites list');
+      return;
+    }
     window.location.href = blockedUrl;
   }, 1500);
 }

@@ -1,5 +1,20 @@
 // Auth page handler for LLM Time Blocker
 
+// Rate limiting
+const loginAttempts = { count: 0, lastAttempt: 0 };
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 30000; // 30 seconds
+
+function checkRateLimit() {
+  const now = Date.now();
+  if (now - loginAttempts.lastAttempt > LOCKOUT_DURATION_MS) {
+    loginAttempts.count = 0;
+  }
+  loginAttempts.lastAttempt = now;
+  loginAttempts.count++;
+  return loginAttempts.count <= MAX_ATTEMPTS;
+}
+
 // DOM Elements
 const tabBtns = document.querySelectorAll('.tab-btn');
 const loginForm = document.getElementById('login-form');
@@ -67,7 +82,11 @@ function setLoading(button, loading) {
   if (loading) {
     button.disabled = true;
     button.dataset.originalText = button.textContent;
-    button.innerHTML = '<span class="loading-spinner"></span>Please wait...';
+    button.textContent = '';
+    const spinner = document.createElement('span');
+    spinner.className = 'loading-spinner';
+    button.appendChild(spinner);
+    button.appendChild(document.createTextNode('Please wait...'));
   } else {
     button.disabled = false;
     button.textContent = button.dataset.originalText;
@@ -78,6 +97,11 @@ function setLoading(button, loading) {
 loginFormEl.addEventListener('submit', async (e) => {
   e.preventDefault();
   hideError();
+
+  if (!checkRateLimit()) {
+    showError('Too many attempts. Please wait 30 seconds.');
+    return;
+  }
 
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
@@ -108,6 +132,11 @@ loginFormEl.addEventListener('submit', async (e) => {
 signupFormEl.addEventListener('submit', async (e) => {
   e.preventDefault();
   hideError();
+
+  if (!checkRateLimit()) {
+    showError('Too many attempts. Please wait 30 seconds.');
+    return;
+  }
 
   const email = document.getElementById('signup-email').value.trim();
   const password = document.getElementById('signup-password').value;

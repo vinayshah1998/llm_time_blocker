@@ -1,5 +1,5 @@
 // Use constants from shared module
-const UNLOCK_PHRASE = LLM_BLOCKER_CONSTANTS.UNLOCK_PHRASE;
+// UNLOCK_PHRASE is no longer stored as plaintext; use verifyUnlockPhrase() instead
 const DEFAULT_BLOCKED_SITES = LLM_BLOCKER_CONSTANTS.DEFAULT_BLOCKED_SITES;
 
 // Auth DOM elements
@@ -303,10 +303,18 @@ function renderBlockedSites(sites) {
   for (const site of sites) {
     const li = document.createElement('li');
     li.className = 'site-item';
-    li.innerHTML = `
-      <span class="site-name">${site}</span>
-      ${isUnlocked ? `<button class="remove-site-btn" data-site="${site}">&times;</button>` : ''}
-    `;
+    const span = document.createElement('span');
+    span.className = 'site-name';
+    span.textContent = site;
+    li.appendChild(span);
+
+    if (isUnlocked) {
+      const btn = document.createElement('button');
+      btn.className = 'remove-site-btn';
+      btn.dataset.site = site;
+      btn.textContent = '\u00d7';
+      li.appendChild(btn);
+    }
     blockedSitesList.appendChild(li);
   }
 
@@ -319,10 +327,11 @@ function renderBlockedSites(sites) {
 }
 
 // Handle unlock
-function handleUnlock() {
+async function handleUnlock() {
   const phrase = unlockPhraseInput.value.trim();
+  const isValid = await verifyUnlockPhrase(phrase);
 
-  if (phrase.toLowerCase() === UNLOCK_PHRASE.toLowerCase()) {
+  if (isValid) {
     isUnlocked = true;
     protectionSection.classList.add('hidden');
     addSiteSection.classList.add('visible');
@@ -339,8 +348,9 @@ async function handleAddSite() {
 
   if (!newSite) return;
 
-  // Basic validation
-  if (!newSite.includes('.') || newSite.includes(' ')) {
+  // Domain validation
+  const domainRegex = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+  if (!domainRegex.test(newSite)) {
     newSiteInput.value = '';
     newSiteInput.placeholder = 'Invalid domain format';
     return;

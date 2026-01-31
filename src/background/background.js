@@ -1,12 +1,29 @@
 // Import shared constants
 importScripts('../shared/constants.js');
 
+// Security event logging helper
+function logSecurityEvent(event, details = {}) {
+  const entry = {
+    timestamp: Date.now(),
+    event,
+    ...details
+  };
+  console.log('[Security]', event, details);
+  // Store last 100 security events
+  chrome.storage.local.get(['securityLog'], (data) => {
+    const log = data.securityLog || [];
+    log.push(entry);
+    if (log.length > 100) log.splice(0, log.length - 100);
+    chrome.storage.local.set({ securityLog: log });
+  });
+}
+
 // Use constants from shared module
 const DEFAULT_BLOCKED_SITES = LLM_BLOCKER_CONSTANTS.DEFAULT_BLOCKED_SITES;
 const APPROVAL_DURATION_MS = LLM_BLOCKER_CONSTANTS.APPROVAL_DURATION_MS;
 
 // Grace period for navigation checks (to avoid race conditions)
-const NAVIGATION_GRACE_PERIOD_MS = 5000;
+const NAVIGATION_GRACE_PERIOD_MS = 200;
 
 // Initialize storage with default blocked sites on install
 chrome.runtime.onInstalled.addListener(async () => {
@@ -352,6 +369,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   if (await hasActiveApprovalForTab(url, tabId)) return;
 
   // Redirect to blocker page
+  logSecurityEvent('NAVIGATION_BLOCKED', { url });
   const blockerUrl = chrome.runtime.getURL('src/pages/blocker/blocker.html') + '?url=' + encodeURIComponent(url);
 
   chrome.tabs.update(tabId, { url: blockerUrl });
@@ -359,6 +377,14 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
 
 // Listen for messages from blocker page and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Validate message sender origin - only allow messages from this extension's pages
+  const extensionOrigin = chrome.runtime.getURL('');
+  if (!sender.url || !sender.url.startsWith(extensionOrigin)) {
+    logSecurityEvent('UNAUTHORIZED_MESSAGE', { senderUrl: sender.url, messageType: message.type });
+    sendResponse({ success: false, error: 'Unauthorized sender' });
+    return true;
+  }
+
   if (message.type === 'GRANT_APPROVAL') {
     const tabId = sender.tab?.id;
     if (!tabId) {
@@ -366,6 +392,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
     }
     grantApproval(message.url, tabId).then(() => {
+      logSecurityEvent('APPROVAL_GRANTED', { url: message.url, tabId });
       sendResponse({ success: true });
     });
     return true; // Keep channel open for async response
