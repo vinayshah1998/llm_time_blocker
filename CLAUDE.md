@@ -11,7 +11,7 @@ LLM Time Blocker is a Chrome extension (Manifest V3) that blocks distracting web
 **Load extension in Chrome:**
 1. Go to `chrome://extensions`
 2. Enable "Developer mode"
-3. Click "Load unpacked" and select this directory
+3. Click "Load unpacked" and select the `extension/` directory
 
 **Testing changes:** Reload the extension from `chrome://extensions` after modifying files.
 
@@ -20,19 +20,21 @@ LLM Time Blocker is a Chrome extension (Manifest V3) that blocks distracting web
 ### Directory Structure
 ```
 llm_time_blocker/
-├── manifest.json
-├── src/
-│   ├── shared/
-│   │   ├── constants.js      # Shared constants (blocked sites, durations, phrases)
-│   │   └── api.js            # Centralized API client
-│   ├── background/
-│   │   └── background.js     # Service worker
-│   └── pages/
-│       ├── popup/            # Extension popup (settings)
-│       ├── blocker/          # Blocking page with LLM chat
-│       └── auth/             # Login/signup forms
-└── assets/
-    └── icons/                # Extension icons
+├── extension/
+│   ├── manifest.json
+│   ├── src/
+│   │   ├── shared/
+│   │   │   ├── constants.js      # Shared constants (blocked sites, durations, phrases)
+│   │   │   └── api.js            # Centralized API client
+│   │   ├── background/
+│   │   │   └── background.js     # Service worker
+│   │   └── pages/
+│   │       ├── popup/            # Extension popup (settings)
+│   │       ├── blocker/          # Blocking page with LLM chat
+│   │       └── auth/             # Login/signup forms
+│   └── assets/
+│       └── icons/                # Extension icons
+└── backend/
 ```
 
 ### Core Flow
@@ -45,12 +47,12 @@ llm_time_blocker/
 
 ### Component Responsibilities
 
-- **src/shared/constants.js**: Shared constants (DEFAULT_BLOCKED_SITES, APPROVAL_DURATION_MS, UNLOCK_PHRASE)
-- **src/shared/api.js**: Centralized API client with automatic token refresh, handles auth/billing/LLM endpoints
-- **src/background/background.js**: Service worker that handles navigation interception, approval storage/expiration, and message passing between components
-- **src/pages/blocker/blocker.js**: Chat interface that proxies LLM calls through backend API, parses LLM responses for access decisions
-- **src/pages/popup/popup.js**: Settings management with phrase-protected site list modification
-- **src/pages/auth/**: Login and signup forms
+- **extension/src/shared/constants.js**: Shared constants (DEFAULT_BLOCKED_SITES, APPROVAL_DURATION_MS, UNLOCK_PHRASE)
+- **extension/src/shared/api.js**: Centralized API client with automatic token refresh, handles auth/billing/LLM endpoints
+- **extension/src/background/background.js**: Service worker that handles navigation interception, approval storage/expiration, and message passing between components
+- **extension/src/pages/blocker/blocker.js**: Chat interface that proxies LLM calls through backend API, parses LLM responses for access decisions
+- **extension/src/pages/popup/popup.js**: Settings management with phrase-protected site list modification
+- **extension/src/pages/auth/**: Login and signup forms
 
 ### Storage Keys (chrome.storage.local)
 - `authTokens`: JWT access and refresh tokens for backend authentication
@@ -75,7 +77,7 @@ llm_time_blocker/
 ### Railway Configuration
 The backend is deployed on Railway with GitHub integration.
 
-**Important**: The repo root contains the Chrome extension, not the backend. For GitHub-triggered deploys to work:
+**Important**: The Chrome extension lives in `extension/` and the backend in `backend/`. For GitHub-triggered deploys to work:
 1. **Railway Console**: Set Root Directory to `backend` in service Settings → Source
 2. **Config file**: `backend/railway.toml` defines build/deploy configuration
 
