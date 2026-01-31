@@ -16,7 +16,7 @@
 
 - [x] **Missing manifest fields** — Added `short_name` ("LLM Blocker") and `homepage_url` to `manifest.json`.
 
-- [x] **Debug logging in backend** — Removed informational `console.log` statements from `oauth.ts`, `index.ts`, `webhooks.ts`, and `routes/billing.ts`. Kept `console.error` for actual error handling.
+- [ ] **Debug logging in backend** — Multiple `console.log` statements in production backend code (`oauth.ts`, `index.ts`, `webhooks.ts`, `routes/billing.ts`) expose internal details. (Not part of the Chrome extension package; server-side only.)
 
 ## Medium
 
