@@ -1,6 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LLM Time Blocker",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7UtjD9APIErCGXljT5b20NMW7wn3drfdnbZKYURoDbOH/1t/kkTmGAx24BuXZfxamciXcVObTYcS6ZdxIZyCO91YaDcgrRcPx9PzidZkjrUMiSHCan+VTMybw+xSZt0UZ5vxuiLicyQfWGgGjcQ96/5FGuXcWfJ9bEyWSG5ozlSYsf3qaoYEQn64SS6yAu+Cuv212cnGC50hPv8r3b3/FABxv/w6FaEuwS9l4Nv54Pe+k9eh8njWNqzZTQAMsn1XIsc8+Y+h4URVSi88oB2Vu2CMVTeRJp0Dr1y8HH6ifEWvr2aSmmhDXPwBoGyZj9wUPfXtsEmDyaOpodrZdiPmswIDAQAB",
   "short_name": "LLM Blocker",
   "homepage_url": "https://llmtimeblocker.com",
   "version": "1.0.0",
